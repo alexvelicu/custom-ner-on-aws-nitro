@@ -10,7 +10,7 @@ cd "$parent_path"
 
 STACK_NAME=NER-API
 REGION=eu-west-1
-CLI_PROFILE=mailchain-sandbox
+CLI_PROFILE=sandbox
 OWNER_CONTACT=fape
 KEY_NAME=nitro-test
 
