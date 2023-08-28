@@ -50,6 +50,8 @@ class NSMUtil():
 
         # Derive public key from private key
         self._public_key = self._rsa_key.publickey().export_key('DER')
+        self._nonce = 'nonce'
+        self._user_data = 'user_data'
 
     def get_attestation_doc(self):
         """Get the attestation document from /dev/nsm."""
@@ -59,8 +61,12 @@ class NSMUtil():
         else:
             # TODO: Update interface to be able to specify nonce
             # See: https://github.com/donkersgoed/aws-nitro-enclaves-nsm-api/commit/112a450082d108bf466ca57e687beaaeff19db4a
-            libnsm_att_doc_cose_signed = libnsm.nsm_get_attestation_doc( # pylint:disable=c-extension-no-member
+            libnsm_att_doc_cose_signed = libnsm.nsm_get_attestation_doc_nonce_user_data( # pylint:disable=c-extension-no-member
                 self._nsm_fd,
+                self._nonce,
+                len(self._nonce),
+                self._user_data,
+                len(self._user_data),
                 self._public_key,
                 len(self._public_key)
             )
