@@ -1,0 +1,47 @@
+# Sample SSH config file to help connect to the Nitro instance
+# via the bastion instance
+#
+# Usage:
+#    Replace parameters with correct ones. Then you can use
+#    the following commands:
+#    If a bastion is used:
+#        > ssh bastion-instance
+#        > ssh nitro-instance-bastion
+#    or, if no bastion is used:
+#        > ssh nitro-instance
+
+# Details of the bastion instance
+
+Host nitro-instance-bastion
+     # Fixed IP address of the Nitro instance in the private subnet
+     Hostname 10.10.0.10
+
+     # Private key file on the local computer
+     IdentityFile ~/.ssh/nitro-test
+
+     # User name on the Nitro instance
+     User ec2-user
+
+     # In the proxy command %h is replaced by the hostname and
+     # %p by the target port (22). Option -q is for quiet mode.
+     ProxyCommand ssh -q -W %h:%p bastion-instance
+
+Host nitro-instance
+     # Fixed Elastic IP address of the nitro instance
+     Hostname 35.181.35.123
+
+     # Private key file on the local computer
+     IdentityFile ~/.ssh/nitro-test
+
+     # User name on the nitro enabled computer
+     User ec2-user
+
+Host bastion-instance
+     # Fixed Elastic IP address of the bastion instance
+     Hostname 35.181.35.123
+
+     # Private key file on the local computer
+     IdentityFile ~/.ssh/nitro-test
+
+     # User name on the bastion computer
+     User ec2-user

@@ -1,0 +1,75 @@
+{
+  "EifVersion": 4,
+  "Measurements": {
+    "HashAlgorithm": "Sha384 { ... }",
+    "PCR0": "e18be1cf0fa0ff69be7b9336baae38fdb948a3b14652fb55bd1c17348aa8ca8416694e5f6736c79366f8da8a19b78278",
+    "PCR1": "bcdf05fefccaa8e55bf2c8d6dee9e79bbff31e34bf28a99aa19e6b29c37ee80b214a414b7607236edf26fcb78654e63f",
+    "PCR2": "c816f02de51a49fac8dbc0a00b59cfa209ff570eec397d354361e59cdb818093df4553cb5f963ece901531866cd05179",
+    "PCR8": "3b8ba86e98c9ed9ecc1ed5303c1fbdc6fa3f953e30948166492f2712c60259172e17f1d64658ae9666c1ca6197e8b2b2"
+  },
+  "IsSigned": true,
+  "SigningCertificate": {
+    "IssuerName": {
+      "commonName": "SmalsNitro",
+      "countryName": "BE",
+      "localityName": "Brussels",
+      "organizationName": "Smals",
+      "organizationalUnitName": "SmalsNitro",
+      "stateOrProvinceName": "Brussels"
+    },
+    "Algorithm": "ecdsa-with-SHA384",
+    "NotBefore": "Mar  8 17:34:26 2023 GMT",
+    "NotAfter": "Apr  7 17:34:26 2023 GMT",
+    "Signature": "30:65:02:31:00:84:9C:5B:D6:97:80:2F:A7:2C:3C:E5:20:25:42:C6:87:65:29:FD:E9:6F:CB:42:56:E6:C6:15:2B:62:C3:15:D2:52:9C:B3:FA:A8:F9:4C:98:38:C3:92:C3:0E:34:19:EB:02:30:25:E0:5D:7D:79:44:74:3C:C9:AD:65:AE:4F:2A:02:75:90:E4:07:A8:7A:02:08:75:FC:D3:53:8B:F6:29:5A:52:CB:61:7F:63:DA:DB:10:20:1B:EB:5B:8D:B4:86:F9:C5"
+  },
+  "CheckCRC": true,
+  "SignatureCheck": true,
+  "ImageName": "nitro-test-enclave",
+  "ImageVersion": "a30f532ddf622dbd5b1dd27e2643f87ed3c9cd9a63777da190c4b8ac3460f8a0",
+  "Metadata": {
+    "BuildTime": "2023-03-08T17:35:33.301707397+00:00",
+    "BuildTool": "nitro-cli",
+    "BuildToolVersion": "1.2.1",
+    "OperatingSystem": "Linux",
+    "KernelVersion": "4.14.256",
+    "DockerInfo": {
+      "Architecture": "amd64",
+      "Author": "",
+      "Comment": "",
+      "Config": {
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": [
+          "/app/run-app.sh"
+        ],
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        ],
+        "ExposedPorts": null,
+        "Hostname": "",
+        "Image": "sha256:550e3144deb8917b82d30cfc39c4ed7526e6dea85fd6cf4375ae0c75c7eaab66",
+        "Labels": null,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Tty": false,
+        "User": "",
+        "WorkingDir": "/app"
+      },
+      "Created": "2023-03-08T17:35:33.236479510Z",
+      "DockerVersion": "20.10.17",
+      "Id": "sha256:a30f532ddf622dbd5b1dd27e2643f87ed3c9cd9a63777da190c4b8ac3460f8a0",
+      "Os": "linux",
+      "Parent": "sha256:550e3144deb8917b82d30cfc39c4ed7526e6dea85fd6cf4375ae0c75c7eaab66",
+      "RepoDigests": [],
+      "RepoTags": [
+        "nitro-test-enclave:latest"
+      ],
+      "Size": 1165586939,
+      "VirtualSize": 1165586939
+    }
+  }
+}

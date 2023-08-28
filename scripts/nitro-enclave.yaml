@@ -1,0 +1,451 @@
+# AWS Nitro Test
+#
+# Copyright Smals Research, 2023.
+# Author: Fabien A. P. Petitcolas
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  This template creates an instance with Nitro enclave enabled on a
+  public subnet which is accessible from the Internet.
+
+  In addition the template creates related resources: a virtual private cloud,
+  a security groups, a NAT gateway, endpoints to use AWS Management System,
+  AWS Key Management Service, etc.
+
+Parameters:
+  OwnerContact:
+    Description: 'Name of the owner of the instance to be created.'
+    Type: String
+    Default: 'fape@'
+  NitroInstanceType:
+    Description: 'Type of AWS instance for the Nitro parent server. Default is m5.2xlarge.'
+    Type: String
+    Default: 'm5.2xlarge'
+  NitroInstanceAMI:
+    Description: 'Linux AMI to use for the Nitro parent server. Default is Amazon Linux AMI.'
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  SSHCidrIp:
+    Description: 'CIDR block used to allow SSH connection. Default is any IP address.'
+    Type: String
+    Default: '0.0.0.0/0'
+  KeyName:
+    Description: 'Name of the key used to access each instance via SSH. Default is nitro-enclave.'
+    Type: String
+    Default: 'nitro-test'
+
+
+Resources:
+
+  ###################################
+  ### Virtual Private Cloud that is logically isolated from other virtual networks in the AWS Cloud.
+  ###################################
+
+  NitroEnclaveVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.10.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} - VPC'
+
+  ###################################
+  ### Public subnet - Resources in this subnet can access the public internet.
+  ###################################
+  
+  NitroParentPublicSubnet:
+    Type: AWS::EC2::Subnet
+    DependsOn: NitroEnclaveVPC
+    Properties:
+      VpcId: !Ref NitroEnclaveVPC
+      AvailabilityZone: !Select [ '0', !GetAZs '' ]
+      # Range of IP address in the VPC.
+      # Here we choose a 24-bit prefix and 8-bit host number
+      CidrBlock: 10.10.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} Public Subnet'
+        - Key: AZ
+          Value: !Select [ '0', !GetAZs '']
+
+  ###################################
+  ### Internet gateway attached to the VPC and permitting connection to the Internet
+  ###################################
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} - Internet Gateway'
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+      - NitroEnclaveVPC
+      - InternetGateway
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref NitroEnclaveVPC
+
+  # Definition of the public route and route table added to the Internet gateway for all traffic
+  NitroParentPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: NitroEnclaveVPC
+    Properties:
+      VpcId: !Ref NitroEnclaveVPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} - Public Routes'
+
+  InternetRoute:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - InternetGatewayAttachment
+      - NitroParentPublicRouteTable
+      - InternetGateway
+    Properties:
+      RouteTableId: !Ref NitroParentPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - NitroParentPublicRouteTable
+      - NitroParentPublicSubnet
+    Properties:
+      RouteTableId: !Ref NitroParentPublicRouteTable
+      SubnetId: !Ref NitroParentPublicSubnet
+
+
+  ###################################
+  ### Definition of the security group
+  ###################################
+
+  NitroParentSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: NitroEnclaveVPC
+    Properties:
+      GroupName: "Enclave group"
+      GroupDescription: !Sub '${AWS::StackName} - Internal Security Group'
+      VpcId: !Ref NitroEnclaveVPC 
+
+
+  ###################################
+  ### Definition inward and outward traffic restrictions for Parent
+  ###################################
+
+  NitroParentAllowInboundSSHFromInternet:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn:
+      - NitroParentSecurityGroup
+    Properties:
+      GroupId: !Ref NitroParentSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: 0.0.0.0/0
+      Description: Inbound SSH access from Internet
+
+  NitroParentAllowInboundAPIFromInternet:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: NitroParentSecurityGroup
+    Properties:
+      GroupId: !Ref NitroParentSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8000
+      ToPort: 8000
+      CidrIp: 0.0.0.0/0
+      Description: Inbound access from Internet on custom API port
+
+  NitroParentAllowOutboundHTTP:
+    Type: AWS::EC2::SecurityGroupEgress
+    DependsOn:
+      - NitroParentSecurityGroup
+    Properties:
+      GroupId: !Ref NitroParentSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+      Description: Outbound access for return HTTP traffic
+
+  NitroParentAllowOutboundHTTPS:
+    Type: AWS::EC2::SecurityGroupEgress
+    DependsOn: NitroParentSecurityGroup
+    Properties:
+      GroupId: !Ref NitroParentSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: 0.0.0.0/0
+      Description: Outbound access for return HTTPS traffic
+
+  ###################################
+  ### Definition of Endpoints for System Management
+  ###################################
+
+  SSMEndpointSSM:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+      - NitroParentSecurityGroup
+      - NitroParentPublicSubnet
+      - NitroEnclaveVPC
+    Properties:
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref NitroParentSecurityGroup
+      ServiceName: !Join [ '', [ 'com.amazonaws.', !Ref AWS::Region, '.ssm' ] ]
+      SubnetIds:
+        - !Ref NitroParentPublicSubnet
+      VpcEndpointType: Interface
+      VpcId: !Ref NitroEnclaveVPC
+
+  SSMEndpointEC2Msg:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+      - NitroParentSecurityGroup
+      - NitroParentPublicSubnet
+      - NitroEnclaveVPC
+    Properties:
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref NitroParentSecurityGroup
+      ServiceName: !Join [ '', [ 'com.amazonaws.', !Ref AWS::Region, '.ec2messages' ] ]
+      SubnetIds:
+        - !Ref NitroParentPublicSubnet
+      VpcEndpointType: Interface
+      VpcId: !Ref NitroEnclaveVPC
+
+  SSMEndpointSSMMsg:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+      - NitroEnclaveVPC
+      - NitroParentSecurityGroup
+      - NitroParentPublicSubnet
+    Properties:
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref NitroParentSecurityGroup
+      ServiceName: !Join [ '', [ 'com.amazonaws.', !Ref AWS::Region, '.ssmmessages' ] ]
+      SubnetIds:
+        - !Ref NitroParentPublicSubnet
+      VpcEndpointType: Interface
+      VpcId: !Ref NitroEnclaveVPC
+
+  ###################################
+  ### Definition of Endpoints for Key Management System
+  ###################################
+
+  KMSEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+      - NitroParentSecurityGroup
+      - NitroParentPublicSubnet
+      - NitroEnclaveVPC
+    Properties:
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref NitroParentSecurityGroup
+      ServiceName: !Join [ '', [ 'com.amazonaws.', !Ref AWS::Region, '.kms' ] ]
+      SubnetIds:
+        - !Ref NitroParentPublicSubnet
+      VpcEndpointType: Interface
+      VpcId: !Ref NitroEnclaveVPC
+
+  ###################################
+  ### Definition of Endpoints for Security Token Service
+  ###################################
+
+  STSEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+      - NitroParentSecurityGroup
+      - NitroParentPublicSubnet
+      - NitroEnclaveVPC
+    Properties:
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref NitroParentSecurityGroup
+      ServiceName: !Join [ '', [ 'com.amazonaws.', !Ref AWS::Region, '.sts' ] ]
+      SubnetIds:
+        - !Ref NitroParentPublicSubnet
+      VpcEndpointType: Interface
+      VpcId: !Ref NitroEnclaveVPC
+
+  ###################################
+  ### KMS settings
+  ###################################
+
+  EnclaveKMSkey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: key-default-1
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Join [ '', [ 'arn:aws:iam::', !Ref AWS::AccountId, ':root' ] ]
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: Enable Enclave to decrypt
+            Effect: Deny
+            Principal:
+              AWS: '*'
+            Action: kms:Decrypt
+            Resource: '*'
+            Condition:
+              StringNotEqualsIgnoreCase:
+                'kms:RecipientAttestation:PCR0': 'EXAMPLETOBEUPDATED'
+
+  EnclaveKMSkeyAlias:
+    Type: AWS::KMS::Alias
+    DependsOn: EnclaveKMSkey
+    Properties:
+      AliasName: !Sub 'alias/EnclaveKMSKey-${AWS::StackName}'
+      TargetKeyId: !Ref EnclaveKMSkey
+
+  ###################################
+  # Create a new role to allow usage of KMS
+  ###################################
+
+  # IAM role to allow application make requests to KMS
+  IAMRoleSSM:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - EnclaveKMSkey
+    Properties:
+      RoleName:
+        !Sub
+        - 'SSM-access-${RandomGUID}'
+        - { RandomGUID: !Select [ 0, !Split [ '-', !Select [ 2, !Split [ '/', !Ref AWS::StackId ] ] ] ] }
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: 'Allow-EC2Instance-KMS-Encrypt'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'kms:Encrypt'
+                Resource:
+                  - !GetAtt EnclaveKMSkey.Arn
+              - Effect: 'Allow'
+                Action: 'kms:Decrypt'
+                Resource:
+                  - !GetAtt EnclaveKMSkey.Arn
+              - Effect: 'Allow'
+                Action: 'kms:GenerateDataKey'
+                Resource:
+                  - !GetAtt EnclaveKMSkey.Arn
+
+  # Pass IAM role to EC2 instance profile
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DependsOn: IAMRoleSSM
+    Properties:
+      InstanceProfileName: !Sub 'SSM_access_${AWS::StackName}'
+      Path: '/'
+      Roles:
+        - !Ref IAMRoleSSM
+ 
+###################################
+### Definition of Nitro parent instance
+###################################
+
+  NitroParentInstance:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - NitroEnclaveVPC
+      - NitroParentPublicSubnet
+    Properties:
+      ImageId: !Ref NitroInstanceAMI
+      InstanceType: !Ref NitroInstanceType
+      SubnetId: !Ref NitroParentPublicSubnet
+      IamInstanceProfile: !Sub 'SSM_access_${AWS::StackName}'
+      KeyName: !Ref KeyName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 128
+      EnclaveOptions:
+        Enabled: true
+      SecurityGroupIds:
+        - !Ref NitroParentSecurityGroup
+      UserData:
+        # User data script that is run at instance first launch.
+        # It updates the Nitro enclave libraries, ensures that the user is part of the Docker group,
+        # launches de Docker service, and set the CPU and memory available for the Nitro Enclave
+        # Allocator Service.
+        Fn::Base64: |
+          #!/bin/bash
+          # install updates
+          yum update -y
+          amazon-linux-extras install aws-nitro-enclaves-cli -y
+          sudo yum install aws-nitro-enclaves-cli-devel -y
+          sudo yum install git -y
+          sudo yum install python3.7 -y
+          sudo usermod -aG ne ec2-user
+          sudo usermod -aG docker ec2-user
+          sudo systemctl start docker && sudo systemctl enable docker
+          ALLOCATOR_YAML=/etc/nitro_enclaves/allocator.yaml
+          MEM_KEY=memory_mib
+          DEFAULT_MEM=20480
+          sudo sed -r "s/^(\s*${MEM_KEY}\s*:\s*).*/\1${DEFAULT_MEM}/" -i "${ALLOCATOR_YAML}"
+          sudo systemctl start nitro-enclaves-allocator.service && sudo systemctl enable nitro-enclaves-allocator.service
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} - Nitro Enclave Instance'
+        - Key: Application
+          Value: 'Linux Server'
+        - Key: Domain
+          Value: 'None'
+        - Key: Environment
+          Value: 'Test'
+        - Key: LifeTime
+          Value: Transient
+        - Key: OS
+          Value: 'Linux'
+        - Key: OwnerContact
+          Value: !Ref OwnerContact
+        - Key: Purpose
+          Value: 'Nitro test'
+
+  # Elastic IP used for Nitro parent host
+  NitroParentEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: NitroParentInstance
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref NitroParentInstance
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName} - Nitro Enclave EIP'
+
+###################################
+### Output of IPs of each instance
+###################################
+
+Outputs:
+  NitroParentPrivateIp:
+    Description: 'Nitro Parent public IP'
+    Value: !Sub  'http://${NitroParentEIP.PublicIp}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApplicationPublicIp'

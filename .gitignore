@@ -1,0 +1,9 @@
+.*
+!/.gitignore
+*.pyc
+*.eif
+
+nitro-test-signing-key.pem
+nitro-test-enclave-csr.pem
+nitro-test-certificate.pem
+enclave-description.json
