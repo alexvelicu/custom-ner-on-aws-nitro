@@ -49,7 +49,7 @@ PARENT_API_URL = f'http://localhost:{PARENT_PORT}/post/'
 ENCLAVE_NAME = 'nitro-test'
 
 # Socket PORT used to communicate with the enclave
-VSOCK_PORT = 5000
+VSOCK_PORT = 8080
 
 # Nitro enclave simulation
 ENCLAVE_HOST =  '127.0.0.1' # Host used for simulation

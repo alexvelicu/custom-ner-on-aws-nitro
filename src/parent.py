@@ -62,7 +62,7 @@ def forward(message: Message):
                                     parameter = payload['parameter'], host=ENCLAVE_HOST)
     else:
         # Get CID of enclave
-        cid = get_cid()
+        cid = 16
         if cid == 0:
             error_msg = "Cannot find an enclave to connect to"
             print(error_msg)
