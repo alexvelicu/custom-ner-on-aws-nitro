@@ -91,6 +91,7 @@ def post_message() -> List[str]:
 
     # Request attestation from the server running in the Nitro enclave
     attestation_doc = get_attestation(cid=cid, host=host, api=api)
+    pprint(attestation_doc, 'Response')
     return attestation_doc
 
 
