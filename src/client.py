@@ -131,9 +131,9 @@ def process_texts(query: InputModel):
     response = send_encrypted_message(public_key=enclave_public_key,
                                       action='process', parameter=query.json(),
                                       cid=cid, host=host, api=api_url)
-    with open('result.html', 'w', encoding='utf-8') as file:
-        file.write(json.loads(response)['result'][0]['html'])
     r = cbor2.loads(response)
+    with open('result.html', 'w', encoding='utf-8') as file:
+        file.write(json.loads(r)['result'][0]['html'])
     pprint(r, 'Response')
     return ResponseModel(**json.loads(r))
 
