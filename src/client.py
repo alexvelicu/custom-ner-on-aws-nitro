@@ -11,6 +11,7 @@ import json
 from typing import List
 import os
 
+import cbor2
 import base64
 import urllib.request
 import click
@@ -91,8 +92,9 @@ def post_message() -> List[str]:
     host = ''
 
     # Request attestation from the server running in the Nitro enclave
-    response = send_request_to_enclave(action='get-attestation', parameter='',
+    res = send_request_to_enclave(action='get-attestation', parameter='',
                                        cid=cid, host=host, api=api)
+    response = cbor2.loads(res)
     pprint(response, 'Response')
     with open('result.html', 'w', encoding='utf-8') as file:
         file.write(json.loads(response)['result'][0]['html'])
@@ -131,11 +133,10 @@ def process_texts(query: InputModel):
     response = send_encrypted_message(public_key=enclave_public_key,
                                       action='process', parameter=query.json(),
                                       cid=cid, host=host, api=api_url)
-    r = cbor2.loads(response)
     with open('result.html', 'w', encoding='utf-8') as file:
-        file.write(json.loads(r)['result'][0]['html'])
-    pprint(r, 'Response')
-    return ResponseModel(**json.loads(r))
+        file.write(json.loads(response)['result'][0]['html'])
+    pprint(response, 'Response')
+    return ResponseModel(**json.loads(response))
 
 
 @click.command()
