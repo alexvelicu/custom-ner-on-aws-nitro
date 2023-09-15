@@ -5,12 +5,12 @@
 parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cd "$parent_path"
 
-cert_cn="SmalsNitro"
-cert_c="BE"
-cert_st="Brussels"
-cert_l="Brussels"
-cert_o="Smals"
-cert_ou="SmalsNitro"
+cert_cn="AWS"
+cert_c="US"
+cert_st="WA"
+cert_l="Seattle"
+cert_o="Amazon"
+cert_ou="AWS"
 
 key=nitro-test-signing-key.pem
 csr=nitro-test-enclave-csr.pem
@@ -46,7 +46,7 @@ openssl ecparam -name secp384r1 -genkey -out $key
 openssl req -new -key $key -sha384 -nodes -subj "/CN=${cert_cn}/C=${cert_c}/ST=${cert_st}/L=${cert_l}/O=${cert_o}/OU=${cert_ou}" -out $csr
 
 # Generate a certificate based on the CSR
-openssl x509 -req -days 30  -in $csr -out $cert -sha384 -signkey $key
+openssl x509 -req -days 365  -in $csr -out $cert -sha384 -signkey $key
 
 ##########
 # Create Nitro enclave

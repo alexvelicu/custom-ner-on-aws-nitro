@@ -146,7 +146,7 @@ def send_request_to_enclave(action: str, parameter: any=None, cid:int=0,
             soc.connect((host, VSOCK_PORT))
 
         pprint(payload_cbor, 'Payload')
-        soc.send(payload_cbor)
+        soc.send(base64.b64encode(payload_cbor))
         pprint(f'Sent request to {cid if cid else host}')
         # Receive the response from the server
         payload_b64 = soc.recv(65536)
