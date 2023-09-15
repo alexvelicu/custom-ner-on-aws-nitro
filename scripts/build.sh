@@ -18,6 +18,7 @@ cert=nitro-test-certificate.pem
 
 eif=spam.eif
 enclave_name=spam
+image_name=alexandruvelicu/spam
 
 pcr=enclave-description.json
 
@@ -55,9 +56,9 @@ nitro-cli terminate-enclave --enclave-name $enclave_name
 rm $eif
 docker rmi -f $(docker images -a -q)
 #docker build ../ -t nitro-test-enclave:latest
-docker pull alexandruvelicu/spam:latest
+docker pull $image_name:latest
 nitro-cli build-enclave \
-    --docker-uri alexandruvelicu/spam:latest \
+    --docker-uri $image_name:latest \
     --private-key $key \
     --signing-certificate $cert \
     --output-file $eif
@@ -67,3 +68,10 @@ nitro-cli describe-eif --eif-path $eif > $pcr
 mv $pcr ../src/
 
 # TODO: Copy enclave file to remote server with Nitro enclave
+
+nitro-cli run-enclave  \
+    --cpu-count 2 --memory 6144  \
+    --eif-path $eif --debug-mode  \
+    --enclave-cid 16
+
+nitro-cli console --enclave-name $enclave_name
