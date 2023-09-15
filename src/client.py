@@ -94,12 +94,10 @@ def post_message() -> List[str]:
     # Request attestation from the server running in the Nitro enclave
     res = send_request_to_enclave(action='get-attestation', parameter='',
                                        cid=cid, host=host, api=api)
-    response = cbor2.loads(res)
-    pprint(response, 'Response')
-    with open('result.html', 'w', encoding='utf-8') as file:
-        file.write(json.loads(response)['result'][0]['html'])
-    pprint(response, 'Response')
-    return ResponseModel(**json.loads(response))
+    response_obj_cbor = cbor2.dumps(res)
+    response_b64 = base64.b64encode(response_obj_cbor)
+    response = json.dumps({'payload': response_b64.decode()})
+    return response
 
 
 @app.post("/process/", summary="Process batches of text", response_model=ResponseModel)
