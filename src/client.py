@@ -133,8 +133,9 @@ def process_texts(query: InputModel):
                                       cid=cid, host=host, api=api_url)
     with open('result.html', 'w', encoding='utf-8') as file:
         file.write(json.loads(response)['result'][0]['html'])
-    pprint(response, 'Response')
-    return ResponseModel(**json.loads(response))
+    r = cbor2.loads(response)
+    pprint(r, 'Response')
+    return ResponseModel(**json.loads(r))
 
 
 @click.command()
