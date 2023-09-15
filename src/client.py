@@ -80,7 +80,7 @@ async def root():
     """
     return "Hello from Proxy"
 
-@app.get("/attestation", summary="Forward message to the enclave server")
+@app.post("/attestation", summary="Forward message to the enclave server")
 def post_message() -> List[str]:
     """ Forward the message received to the enclave server."""
     print("Get request received")
