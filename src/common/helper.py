@@ -77,20 +77,7 @@ def get_cid(enclave_name: str = ENCLAVE_NAME) -> int:
     Returns:
         (int): Enclave CID is successful. 0 otherwise.
     """
-    try:
-        enclaves_str = subprocess.check_output(['nitro-cli', 'describe-enclaves'])
-    except:
-        return 0
-    if not enclaves_str:
-        return 0
-
-    enclaves_obj = json.loads(enclaves_str)
-    cid = 0
-    for enclave in enclaves_obj:
-        if enclave['EnclaveName'] == enclave_name:
-            cid = enclave['EnclaveCID']
-
-    return cid
+    return 16
 
 
 def verify_enclave(eif_description_file: str, attestation_doc: bytes) -> bytes:

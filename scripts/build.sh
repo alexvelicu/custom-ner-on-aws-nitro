@@ -16,8 +16,8 @@ key=nitro-test-signing-key.pem
 csr=nitro-test-enclave-csr.pem
 cert=nitro-test-certificate.pem
 
-eif=nitro-test.eif
-enclave_name=nitro-test
+eif=spam.eif
+enclave_name=spam
 
 pcr=enclave-description.json
 
@@ -54,9 +54,10 @@ openssl x509 -req -days 30  -in $csr -out $cert -sha384 -signkey $key
 nitro-cli terminate-enclave --enclave-name $enclave_name
 rm $eif
 docker rmi -f $(docker images -a -q)
-docker build ../ -t nitro-test-enclave:latest
+#docker build ../ -t nitro-test-enclave:latest
+docker pull alexandruvelicu/spam:latest
 nitro-cli build-enclave \
-    --docker-uri nitro-test-enclave:latest \
+    --docker-uri alexandruvelicu/spam:latest \
     --private-key $key \
     --signing-certificate $cert \
     --output-file $eif
