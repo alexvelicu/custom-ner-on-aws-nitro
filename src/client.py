@@ -94,7 +94,10 @@ def post_message() -> List[str]:
     response = send_request_to_enclave(action='get-attestation', parameter='',
                                        cid=cid, host=host, api=api)
     pprint(response, 'Response')
-    return response
+    with open('result.html', 'w', encoding='utf-8') as file:
+        file.write(json.loads(response)['result'][0]['html'])
+    pprint(response, 'Response')
+    return ResponseModel(**json.loads(response))
 
 
 @app.post("/process/", summary="Process batches of text", response_model=ResponseModel)
