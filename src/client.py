@@ -14,6 +14,7 @@ import os
 import base64
 import urllib.request
 import click
+from src.common.messages import send_request_to_enclave
 import uvicorn
 from fastapi import FastAPI
 
@@ -90,9 +91,10 @@ def post_message() -> List[str]:
     host = ''
 
     # Request attestation from the server running in the Nitro enclave
-    attestation_doc = get_attestation(cid=cid, host=host, api=api)
-    pprint(attestation_doc, 'Response')
-    return attestation_doc
+    response = send_request_to_enclave(action='get-attestation', parameter='',
+                                       cid=cid, host=host, api=api)
+    pprint(response, 'Response')
+    return response
 
 
 @app.post("/process/", summary="Process batches of text", response_model=ResponseModel)
