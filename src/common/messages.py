@@ -133,43 +133,20 @@ def send_request_to_enclave(action: str, parameter: any=None, cid:int=0,
     })
 
     # Send them to the server
-    if cid or host:
-        if cid:
-            # Create a vsock socket object
-            soc = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
+    # Create a vsock socket object
+    soc = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
 
-            # Connect to the server running in the Nitro enclave
-            soc.connect((cid, VSOCK_PORT))
+    # Connect to the server running in the Nitro enclave
+    soc.connect((cid, VSOCK_PORT))
 
-        if host:
-            soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            soc.connect((host, VSOCK_PORT))
+    pprint(payload_cbor, 'Payload')
+    soc.send(base64.b64encode(payload_cbor))
+    pprint(f'Sent request to {cid if cid else host}')
+    # Receive the response from the server
+    payload_b64 = soc.recv(65536)
 
-        pprint(payload_cbor, 'Payload')
-        soc.send(base64.b64encode(payload_cbor))
-        pprint(f'Sent request to {cid if cid else host}')
-        # Receive the response from the server
-        payload_b64 = soc.recv(65536)
-
-        # Close the connection with the server
-        soc.close()
-
-    else:  # url
-        # Post the request to the server
-        try:
-            payload_b64 = base64.b64encode(payload_cbor)
-            payload = payload_b64.decode()
-            response = requests.post(api, json={'payload': payload}, timeout=DEFAULT_TIMEOUT)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as error:
-            print(f'Error getting response from server: {str(error)}')
-            return None
-        pprint(response.json(), 'Response from bastion')
-
-        # Unpack response from server
-        response_obj = json.loads(response.json())
-        payload_b64 = str.encode(response_obj['payload'])
-
+    # Close the connection with the server
+    soc.close()
 
     pprint(payload_b64, 'Base64 encoded payload')
 
