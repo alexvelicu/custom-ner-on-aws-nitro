@@ -80,37 +80,18 @@ async def root():
     """
     return "Hello from Proxy"
 
-@app.get("/models", summary="List all loaded models")
-def get_models() -> List[str]:
-    """ Return a list of all available loaded models."""
+@app.get("/attestation", summary="Forward message to the enclave server")
+def post_message() -> List[str]:
+    """ Forward the message received to the enclave server."""
     print("Get request received")
 
-    api_url = os.getenv('API_URL')
-    enclave_public_key = base64.b64decode(str.encode(os.getenv('ENCLAVE_PUBLIC_KEY')))
-    simulate = True if os.getenv('NITRO_SIMULATION') == 'True' else False
+    api=''
+    cid = get_cid()
+    host = ''
 
-    if api_url:
-        host = ''
-        cid = 0
-    elif simulate:
-        api_url = ''
-        host = ENCLAVE_HOST
-        cid = 0
-    else:
-        # Get CID of enclave
-        cid = get_cid()
-        host = ''
-        if cid == 0:
-            error_msg = "Cannot find an enclave to connect to"
-            print(error_msg)
-            return error_msg
-
-    # Request the list of models
-    model_names = send_encrypted_message(public_key=enclave_public_key,
-                                         action='models', cid=cid, host=host,
-                                         api=api_url)
-    pprint(model_names, 'Available models')
-    return model_names
+    # Request attestation from the server running in the Nitro enclave
+    attestation_doc = get_attestation(cid=cid, host=host, api=api)
+    return attestation_doc
 
 
 @app.post("/process/", summary="Process batches of text", response_model=ResponseModel)
