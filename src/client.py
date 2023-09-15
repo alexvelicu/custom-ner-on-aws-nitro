@@ -14,7 +14,7 @@ import os
 import base64
 import urllib.request
 import click
-from src.common.messages import send_request_to_enclave
+from common.messages import send_request_to_enclave
 import uvicorn
 from fastapi import FastAPI
 
