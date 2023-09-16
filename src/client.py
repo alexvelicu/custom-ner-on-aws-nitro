@@ -41,7 +41,6 @@ class RequestModel(BaseModel):
     """Schema for processing requests on enclave
     """
     payload: str
-    action: str
 
 class Text(BaseModel):
     """Schema for a single text in a batch of texts to process
@@ -91,14 +90,18 @@ async def root():
 def post_message(req: RequestModel) -> List[str]:
     """ Forward the message received to the enclave server."""
     print("Process request received")
-    pprint(req.json(),'query')
+    pprint(req.json(), 'query')
+    
+    decoded = base64.b64decode(req.payload)
+    obj = cbor2.loads(decoded)
+    pprint(req.json(), 'request')
 
     api=''
     cid = get_cid()
     host = ''
 
     # Request attestation from the server running in the Nitro enclave
-    res = send_request_to_enclave(action=req.action, parameter=req.payload,
+    res = send_request_to_enclave(action=obj.action, parameter=obj.payload,
                                        cid=cid, host=host, api=api)
     response_obj_cbor = cbor2.dumps(res)
     response_b64 = base64.b64encode(response_obj_cbor)
