@@ -37,6 +37,11 @@ class ModelName(str, Enum):
 DEFAULT_MODEL = ModelName.ner_dutch
 MODEL_NAMES = [model.value for model in ModelName]
 
+class RequestModel(BaseModel):
+    """Schema for processing requests on enclave
+    """
+    payload: str
+    action: str
 
 class Text(BaseModel):
     """Schema for a single text in a batch of texts to process
@@ -82,17 +87,18 @@ async def root():
     """
     return "Hello from Proxy"
 
-@app.post("/attestation", summary="Forward message to the enclave server")
-def post_message() -> List[str]:
+@app.post("/process/", summary="Forward message to the enclave server")
+def post_message(req: RequestModel) -> List[str]:
     """ Forward the message received to the enclave server."""
-    print("Get request received")
+    print("Process request received")
+    pprint(req.json(),'query')
 
     api=''
     cid = get_cid()
     host = ''
 
     # Request attestation from the server running in the Nitro enclave
-    res = send_request_to_enclave(action='get-attestation', parameter='',
+    res = send_request_to_enclave(action=req.action, parameter=req.payload,
                                        cid=cid, host=host, api=api)
     response_obj_cbor = cbor2.dumps(res)
     response_b64 = base64.b64encode(response_obj_cbor)
@@ -100,7 +106,7 @@ def post_message() -> List[str]:
     return response
 
 
-@app.post("/process/", summary="Process batches of text", response_model=ResponseModel)
+@app.post("/processtexts/", summary="Process batches of text", response_model=ResponseModel)
 def process_texts(query: InputModel):
     """Process a batch of texts and return the entities predicted by the
     given model. Each record in the data should have a key "text".
