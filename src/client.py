@@ -94,7 +94,7 @@ def post_message(req: RequestModel) -> List[str]:
     
     decoded = base64.b64decode(req.payload)
     obj = cbor2.loads(decoded)
-    pprint(req.json(), 'request')
+    pprint(obj.json(), 'request')
 
     api=''
     cid = get_cid()
