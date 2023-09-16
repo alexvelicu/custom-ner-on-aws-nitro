@@ -93,15 +93,16 @@ def post_message(req: RequestModel) -> List[str]:
     pprint(req.json(), 'query')
     
     decoded = base64.b64decode(req.payload)
-    obj = cbor2.loads(decoded)
-    pprint(obj, 'request')
+    reqObj = cbor2.loads(decoded)
+    request = json.loads(reqObj)
+    pprint(request.json(), 'request')
 
     api=''
     cid = get_cid()
     host = ''
 
     # Request attestation from the server running in the Nitro enclave
-    res = send_request_to_enclave(action=obj.action, parameter=obj.payload,
+    res = send_request_to_enclave(action=request.action, parameter=request.payload,
                                        cid=cid, host=host, api=api)
     response_obj_cbor = cbor2.dumps(res)
     response_b64 = base64.b64encode(response_obj_cbor)
