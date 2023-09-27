@@ -101,6 +101,9 @@ def post_message(req: RequestModel) -> List[str]:
     api=''
     cid = get_cid()
     host = ''
+    
+    print(f'action: {reqObj["action"]}')
+    print(f'parameter: {param}')
 
     # Request attestation from the server running in the Nitro enclave
     res = send_request_to_enclave(action=reqObj["action"], parameter=param,
