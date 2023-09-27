@@ -98,7 +98,7 @@ def get_attestation(cid: int=0, host: str='', api: str='') -> bytes:
     if not response:
         print('Unable to get attestation. Cannot continue.')
         exit(0)
-    attestation_doc = response['attestation']
+    attestation_doc = response['data']
     pprint(base64.b64encode(attestation_doc).decode(), 'Base64 encoded attestation')
 
     if 'private_key' in response:
